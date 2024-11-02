@@ -129,7 +129,7 @@ main = do
 
   putStrLn $ colorGreen ++ "\n[*] calculating delta mins" ++ colorDefault
   putStrLn "\nResults:"
-  _ <- sequence $ map (\(v,e) -> putStrLn $ (show v) ++ " +- " ++ (show e)) $ zip deltaMins deltaMinErrs
+  _ <- sequence $ map (\(v,e) -> putStrLn $ (show v) ++ " +- " ++ (show e) ++ " rad") $ zip deltaMins deltaMinErrs
 
   putStrLn $ colorGreen ++ "\n[*] calculating refraction indices" ++ colorDefault
   putStrLn "\nResults:"
