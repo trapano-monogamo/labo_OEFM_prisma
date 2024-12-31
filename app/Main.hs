@@ -52,6 +52,7 @@ data TTest = ConfidenceInterval Float | SignificanceTest Float Float | NoTest
 
 
 
+
 processFile :: String ->                               -- filename
                (String -> [[Float]]) ->                -- parser
                ([[Float]] -> [Float]) ->               -- operation on dataset
@@ -106,26 +107,32 @@ processFile path parseContents processData calcErrors bestEstimate units scaleFa
 
 -- ..:: Entry Point ::..
 
-lambdaMeasurements :: Float -> [IO (Float,Float)]
-lambdaMeasurements midPoint = [
-  (processFile "./data/misure_viola1.csv"  (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_viola2.csv"  (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_blu.csv"     (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_azzurro.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_verde.csv"   (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_giallo1.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_giallo2.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest)),
-  (processFile "./data/misure_rosso.csv"   (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (stdAverage) "rad" (1) (NoTest))]
+deltaMinMeasurements :: Float -> [IO (Float,Float)]
+deltaMinMeasurements midPoint = [
+  (processFile "./data/misure_viola1.csv"  (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_viola2.csv"  (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_blu.csv"     (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_azzurro.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_verde.csv"   (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_giallo1.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_giallo2.csv" (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95)),
+  (processFile "./data/misure_rosso.csv"   (simpleParser) (calcDeltaMins midPoint) (calcDeltaMinErrors midPoint) (weightedAverage) "rad" (1) (ConfidenceInterval 0.95))]
+
+
+linearRegressionPoint :: ((Float,Float),(String,Float,Float)) -> (Float,Float,Float,Float)
+linearRegressionPoint ((n,en),(_,l,el)) = (n,en,(1 / l ** 2),(el * 2 / (l ** 3)))
+
 
 main :: IO ()
 main = do
   (alpha,alphaErr)       <- processFile "./data/misure_alfa.csv"     (simpleParser) (calcAlphas)    (calcAlphaErrors)    (stdAverage) "rad" (1) (NoTest)
   (midPoint,midPointErr) <- processFile "./data/misure_midpoint.csv" (simpleParser) (calcMidPoints) (calcMidPointErrors) (stdAverage) "rad" (1) (NoTest)
-  resultsTmp <- sequence (lambdaMeasurements midPoint)
+  resultsTmp <- sequence (deltaMinMeasurements midPoint)
 
   let (deltaMins,deltaMinErrs) = unzip resultsTmp
       refIdxs = map (calcRefractionIndex alpha) deltaMins
       refIdxErrs = map (\(dm,dmErr) -> calcRefractionIndexError alpha alphaErr dm dmErr) $ zip deltaMins deltaMinErrs
+      cauchyData = map linearRegressionPoint $ zip (zip refIdxs refIdxErrs) lambdas
 
   putStrLn $ colorGreen ++ "\n[*] calculating delta mins" ++ colorDefault
   putStrLn "\nResults:"
@@ -134,5 +141,10 @@ main = do
   putStrLn $ colorGreen ++ "\n[*] calculating refraction indices" ++ colorDefault
   putStrLn "\nResults:"
   _ <- sequence $ map (\(v,e) -> putStrLn $ (show v) ++ " +- " ++ (show e)) $ zip refIdxs refIdxErrs
+
+  -- output linear regression
+  writeFile "./cauchy_data.csv" (foldl
+    (\acc (y,ey,x,ex) -> acc ++ (show x) ++ " " ++ (show ex) ++ " " ++ (show y) ++ " " ++ (show ey) ++ "\n")
+    "" $ cauchyData)
 
   return ()
