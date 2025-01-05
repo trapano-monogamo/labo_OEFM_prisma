@@ -120,7 +120,7 @@ deltaMinMeasurements midPoint = [
 
 
 linearRegressionPoint :: ((Float,Float),(String,Float,Float)) -> (Float,Float,Float,Float)
-linearRegressionPoint ((n,en),(_,l,el)) = (n,en,(1 / l ** 2),(el * 2 / (l ** 3)))
+linearRegressionPoint ((n,en),(_,l,el)) = (n**2,2*n*en,(1 / l ** 2),(el * 2 / (l ** 3)))
 
 
 main :: IO ()
