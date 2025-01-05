@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
 	graph.SetTitle("Approssimazione di Cauchy");
 	graph.GetXaxis()->SetTitle("1/#lambda^{2} [#AA^{-2}]");
 	graph.GetXaxis()->CenterTitle(true);
-	graph.GetYaxis()->SetTitle("n^{2}(#lambda)");
+	graph.GetYaxis()->SetTitle("n(#lambda)");
 	graph.GetYaxis()->CenterTitle(true);
 
 	TLegend legend(0.15,0.7,0.3,0.85);
